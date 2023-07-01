@@ -9,65 +9,180 @@
 // @match        https://trade.jd.com/shopping/order/getOrderInfo.action
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=openai.com
 // @grant        GM_xmlhttpRequest
+// @grant        GM_setValue
+// @grant        GM_getValue
+// @run-at       document-end
 // ==/UserScript==
 
-(function() {
-    'use strict';
-
+(function () {
+    "use strict";
     // Your code here...
-//https://item.jd.com/{itemId}.html
 
-// let itemId=100050901790
 
-let itemId=100052940701//输入物品id
-//抢购时间
-let time=new Date()
-time.setHours(24)//在今天几点钟抢票（明天0点则写24）
-time.setMinutes(0)//在今天几分钟抢票
-time.setSeconds(0)
-time.setMilliseconds(0)
+    const item = GM_getValue("jd_flash", {});//获取京东秒杀列表 {itemId: string ,flash_time:[hour,min]}
+    console.log(item);
+    if ("itemId" in item) {
+        //正在抢购中
+        let itemId = item["itemId"];
+        console.log("itemid:", itemId);
+        let flash_time = new Date();
+        flash_time.setSeconds(0);
+        flash_time.setMilliseconds(0);
+        flash_time.setHours(item["flash_time"][0])
+        flash_time.setMinutes(item["flash_time"][1])
 
-if (window.location.href===`https://item.jd.com/${itemId}.html`){
-    //商品页
-    console.log("在商品页");
-    let now;
-    let timer=setInterval(
-        ()=>{
-            GM_xmlhttpRequest({
-                method: "POST",
-                url: "https://sgm-m.jd.com/h5/",
-                headers: {
-                    "Content-Type": "application/json"
-                  },
-                onload: function(response) {
-                    now=new Date(response.responseHeaders.match(/date: (.+?)[\n\r]/)[1]);
-                }
-            });
-            if(time-now<=0){
-                clearInterval(timer)
-                window.location.href=`//cart.jd.com/gate.action?pid=${itemId}&pcount=1&ptype=1`
-            }else{
-                console.log(`时间还差${(time-now)/1000}秒`)
+        if (window.location.href.startsWith(`https://item.jd.com/${itemId}.html`)) {
+            //商品页
+            console.log("在抢购商品页");
+
+            //设置面板
+            const setting = document.createElement("div");
+            setting.style.cssText = `
+            position:absolute;
+            width:100px;
+            min-heigh:200px;
+            padding:2px;
+            top:1rem;
+            right:1rem;
+            border: solid black 2px;
+            border-radium: 5px;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            justify-content:space-around;
+            background-color:white;
+        `;
+            setting.innerHTML = `
+        <div>倒计时:</div>
+        <div id="GM_div_cd">?秒</div>
+        <button id="GM_btn_rmflash">取消抢购</button>
+        `;
+            document.body.append(setting);
+            let btn = document.querySelector("#GM_btn_rmflash")
+            btn.onclick = () => {
+                GM_setValue("jd_flash", {});
+                location.reload();
             }
-        },200
-    )
 
-}else if (window.location.href.startsWith(`https://cart.jd.com/addToCart.html`) && window.location.href.includes(`${itemId}`)){
-//已加入购物车
-        console.log("已加入购物车");
-        window.onload=()=>{window.location.href=`https://cart.jd.com/cart_index`}
-}else if(window.location.href===`https://cart.jd.com/cart_index`){
-    //购物车界面
-    window.onload=()=>{
-        let btn=document.querySelector("#cart-body > div:nth-child(2) > div:nth-child(26) > div > div.cart-floatbar.cart-floatbar-fixed > div > div > div > div.options-box > div.right > div > div.btn-area > a")
-        btn.click()
+            let cdElem = document.querySelector("#GM_div_cd")
+            //抢购
+            let now;
+            let timer = setInterval(() => {
+                GM_xmlhttpRequest({
+                    method: "POST",
+                    url: "https://sgm-m.jd.com/h5/",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    onload: function (response) {
+                        now = new Date(
+                            response.responseHeaders.match(/date: (.+?)[\n\r]/)[1]
+                        );
+                    },
+                });
+                if (flash_time - now <= 0) {
+                    clearInterval(timer);
+                    window.location.href = `//cart.jd.com/gate.action?pid=${itemId}&pcount=1&ptype=1`;
+                } else {
+                    cdElem.textContent = `${(flash_time - now) / 1000}秒`;
+                    console.log(`时间还差${(flash_time - now) / 1000}秒`);
+                }
+            }, 200);
+        } else if (window.location.href.startsWith(`https://item.jd.com`)) {
+            //抢购了，但当前页非抢购物品页面
+            console.log("正在抢购的itemId:", itemId);
+            not_flash_page()
+        }
+        else if (
+            window.location.href.startsWith(`https://cart.jd.com/addToCart.html`) &&
+            window.location.href.includes(`${itemId}`)
+        ) {
+            //已加入购物车
+            console.log("已加入购物车");
+            window.location.href = `https://cart.jd.com/cart_index`;
+        } else if (window.location.href.startsWith(`https://cart.jd.com/cart_index`)) {
+            //购物车界面
+            console.log("购物车界面");
+            window.onload = () => {
+                setTimeout(
+                    () => {
+                        let btn = document.querySelector("#cart-body div.options-box > div.right > div > div.btn-area > a")
+                        console.log("btn:", btn);
+                        btn.click();
+                    }
+                )
+            }
+        } else if (
+            window.location.href.startsWith(`https://trade.jd.com/shopping/order/getOrderInfo.action`)
+        ) {
+            //结算页面（最后一个页面）
+            console.log("结算页面");
+            // let btn = document.querySelector("#order-submit");
+            // btn.click();
+            GM_setValue("jd_flash", {});//加入购物车后恢复未抢购状态
+        }
+    } else if (window.location.href.startsWith(`https://item.jd.com`)) {
+        //未抢购任何物品
+        not_flash_page();
+    } else {
+        console.log("未匹配");
     }
-}else if(window.location.href===`https://trade.jd.com/shopping/order/getOrderInfo.action`){
-    //结算页面
-    window.onload=()=>{
-        console.log("结算");
-        let btn=document.querySelector("#order-submit")
-        btn.click()
+})();
+
+
+function not_flash_page() {
+    //未抢购当前物品（包含未抢购物品与正在抢购但非当前物品两种情况）
+
+    console.log("在未抢购商品页");
+    let itemId_now = window.location.href.match(/com\/(\d+)\.html/)[1];
+    const setting = document.createElement("div");
+    setting.style.cssText = `
+            position:absolute;
+            width:100px;
+            min-heigh:200px;
+            padding:2px;
+            top:1rem;
+            right:1rem;
+            border: solid black 2px;
+            border-radium: 5px;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            justify-content:space-around;
+            background-color:white;
+        `;
+    setting.innerHTML = `
+        <div>未抢购</div>
+        <div>时：<input type="text" id="GM_input_hour" style="width:3rem;"></div>
+        <div>分：<input type="text" id="GM_input_min" style="width:3rem;"></div>
+        <button id="GM_btn_flash">抢购</button>
+        `;
+    document.body.append(setting);
+
+    let btn = document.querySelector("#GM_btn_flash");
+    btn.onclick = () => {
+        if (document.querySelector("#GM_input_hour").value == '' || document.querySelector("#GM_input_min").value === '') {
+            alert("请输入抢购时间")
+            return
+        }
+        let hour = new Number(document.querySelector("#GM_input_hour").value);
+        let minutes = new Number(document.querySelector("#GM_input_min").value);
+        console.log(hour, minutes);
+        if (isNaN(hour) || isNaN(minutes)) {
+            alert("请输入数字")
+            return
+        }
+        let flash_time = new Date();
+        flash_time.setHours(hour)
+        flash_time.setMinutes(minutes)
+        flash_time.setSeconds(0);
+        flash_time.setMilliseconds(0);
+        console.log("时间差", new Date() - flash_time);
+        if (new Date() - flash_time >= 0) {
+            alert("抢购时间不能小于当前时间")
+            return
+        }
+        GM_setValue("jd_flash", { itemId: itemId_now, flash_time: [flash_time.getHours(), flash_time.getMinutes()] });
+        location.reload();
     }
 }
-})();
