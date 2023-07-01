@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         jd抢购
 // @namespace    http://tampermonkey.net/
-// @version      0.1.3
+// @version      0.1.4
 // @description  jd秒杀抢购脚本
 // @author       寻步
 // @match        https://item.jd.com/*
@@ -31,7 +31,8 @@
         flash_time.setMilliseconds(0);
         flash_time.setHours(item["flash_time"][0])
         flash_time.setMinutes(item["flash_time"][1])
-        if (new Data() - flash_time > 3 * 1000) {//如果进入页面时超过抢购值三秒则不抢购
+        if (new Date() - flash_time > 3 * 1000) {//如果进入页面时超过抢购值三秒则不抢购
+            console.log("抢购过时，恢复未抢购状态");
             GM_setValue("jd_flash", {});//加入购物车后恢复未抢购状态
             location.reload()
         }
