@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         jd抢购
 // @namespace    http://tampermonkey.net/
-// @version      0.1
-// @description  try to take over the world!
+// @version      0.1.3
+// @description  jd秒杀抢购脚本
 // @author       寻步
 // @match        https://item.jd.com/*
 // @match        https://cart.jd.com/*
@@ -12,6 +12,7 @@
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @run-at       document-end
+// @license      MIT
 // ==/UserScript==
 
 (function () {
@@ -30,7 +31,10 @@
         flash_time.setMilliseconds(0);
         flash_time.setHours(item["flash_time"][0])
         flash_time.setMinutes(item["flash_time"][1])
-
+        if (new Data() - flash_time > 3 * 1000) {//如果进入页面时超过抢购值三秒则不抢购
+            GM_setValue("jd_flash", {});//加入购物车后恢复未抢购状态
+            location.reload()
+        }
         if (window.location.href.startsWith(`https://item.jd.com/${itemId}.html`)) {
             //商品页
             console.log("在抢购商品页");
@@ -117,8 +121,15 @@
         ) {
             //结算页面（最后一个页面）
             console.log("结算页面");
-            // let btn = document.querySelector("#order-submit");
-            // btn.click();
+            window.onload = () => {
+                setTimeout(
+                    () => {
+                        let btn = document.querySelector("#order-submit");
+                        btn.click();
+                    }
+                )
+            }
+
             GM_setValue("jd_flash", {});//加入购物车后恢复未抢购状态
         }
     } else if (window.location.href.startsWith(`https://item.jd.com`)) {
@@ -182,7 +193,7 @@ function not_flash_page() {
             alert("抢购时间不能小于当前时间")
             return
         }
-        GM_setValue("jd_flash", { itemId: itemId_now, flash_time: [flash_time.getHours(), flash_time.getMinutes()] });
+        GM_setValue("jd_flash", { itemId: itemId_now, flash_time: [hour, minutes] });
         location.reload();
     }
 }
