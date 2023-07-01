@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         jd抢购
 // @namespace    http://tampermonkey.net/
-// @version      0.1.4
+// @version      0.1.6
 // @description  jd秒杀抢购脚本
 // @author       寻步
 // @match        https://item.jd.com/*
@@ -43,14 +43,15 @@
             //设置面板
             const setting = document.createElement("div");
             setting.style.cssText = `
-            position:absolute;
+            z-index:999;
+            position:fixed;
             width:100px;
             min-heigh:200px;
             padding:2px;
             top:1rem;
             right:1rem;
             border: solid black 2px;
-            border-radium: 5px;
+            border-radius: 13px;
             display:flex;
             flex-direction:column;
             align-items:center;
@@ -58,7 +59,9 @@
             background-color:white;
         `;
             setting.innerHTML = `
-        <div>倒计时:</div>
+        <div>抢购时间：</div>
+        <div>${flash_time.getMonth() + 1}月${flash_time.getDate()}日 ${flash_time.getHours()}:${flash_time.getMinutes()}</div>
+        <div>倒计时：</div>
         <div id="GM_div_cd">?秒</div>
         <button id="GM_btn_rmflash">取消抢购</button>
         `;
@@ -72,7 +75,9 @@
             let cdElem = document.querySelector("#GM_div_cd")
             //抢购
             let now;
-            let timer = setInterval(() => {
+            
+            let timer;
+            function run(){
                 GM_xmlhttpRequest({
                     method: "POST",
                     url: "https://sgm-m.jd.com/h5/",
@@ -86,13 +91,18 @@
                     },
                 });
                 if (flash_time - now <= 0) {
-                    clearInterval(timer);
+                    if(timer)clearTimeout(timer)
                     window.location.href = `//cart.jd.com/gate.action?pid=${itemId}&pcount=1&ptype=1`;
+                    return 
                 } else {
                     cdElem.textContent = `${(flash_time - now) / 1000}秒`;
                     console.log(`时间还差${(flash_time - now) / 1000}秒`);
                 }
-            }, 200);
+                const relay =(flash_time - now)/1000>10?500:67.5
+                timer=setTimeout(run,relay)
+            }
+            run()
+
         } else if (window.location.href.startsWith(`https://item.jd.com`)) {
             //抢购了，但当前页非抢购物品页面
             console.log("正在抢购的itemId:", itemId);
@@ -149,6 +159,7 @@ function not_flash_page() {
     let itemId_now = window.location.href.match(/com\/(\d+)\.html/)[1];
     const setting = document.createElement("div");
     setting.style.cssText = `
+            z-index:999;
             position:absolute;
             width:100px;
             min-heigh:200px;
@@ -156,7 +167,7 @@ function not_flash_page() {
             top:1rem;
             right:1rem;
             border: solid black 2px;
-            border-radium: 5px;
+            border-radius: 13px;
             display:flex;
             flex-direction:column;
             align-items:center;
@@ -193,8 +204,6 @@ function not_flash_page() {
             alert("抢购时间不能小于当前时间")
             return
         }
-        console.log("hour and min",hour,minutes);
-        alert("123")
         GM_setValue("jd_flash", { itemId: itemId_now, flash_time: [parseFloat(hour.toString()), parseFloat(minutes.toString())] });
         location.reload();
     }
