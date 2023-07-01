@@ -31,7 +31,7 @@
         flash_time.setMilliseconds(0);
         flash_time.setHours(item["flash_time"][0])
         flash_time.setMinutes(item["flash_time"][1])
-        if (new Date() - flash_time > 3 * 1000) {//如果进入页面时超过抢购值三秒则不抢购
+        if (new Date() - flash_time > 5 * 1000) {//如果进入页面时超过抢购值三秒则不抢购
             console.log("抢购过时，恢复未抢购状态");
             GM_setValue("jd_flash", {});//加入购物车后恢复未抢购状态
             location.reload()
@@ -189,12 +189,13 @@ function not_flash_page() {
         flash_time.setMinutes(minutes)
         flash_time.setSeconds(0);
         flash_time.setMilliseconds(0);
-        console.log("时间差", new Date() - flash_time);
         if (new Date() - flash_time >= 0) {
             alert("抢购时间不能小于当前时间")
             return
         }
-        GM_setValue("jd_flash", { itemId: itemId_now, flash_time: [hour, minutes] });
+        console.log("hour and min",hour,minutes);
+        alert("123")
+        GM_setValue("jd_flash", { itemId: itemId_now, flash_time: [parseFloat(hour.toString()), parseFloat(minutes.toString())] });
         location.reload();
     }
 }
