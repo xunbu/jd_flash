@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         jd抢购
 // @namespace    http://tampermonkey.net/
-// @version      0.1.6
+// @version      0.1.7
 // @description  jd秒杀抢购脚本
 // @author       寻步
 // @match        https://item.jd.com/*
@@ -98,7 +98,7 @@
                     cdElem.textContent = `${(flash_time - now) / 1000}秒`;
                     console.log(`时间还差${(flash_time - now) / 1000}秒`);
                 }
-                const relay =(flash_time - now)/1000>10?500:67.5
+                const relay =(flash_time - now)/1000>5?250:62.5//分段延时
                 timer=setTimeout(run,relay)
             }
             run()
@@ -122,6 +122,9 @@
                 setTimeout(
                     () => {
                         let btn = document.querySelector("#cart-body div.options-box > div.right > div > div.btn-area > a")
+                        if(!btn){
+                            btn = document.querySelector("#cart-body div.options-box > div.right > div > div.btn-area > a")
+                        }
                         console.log("btn:", btn);
                         btn.click();
                     }
@@ -136,6 +139,7 @@
                 setTimeout(
                     () => {
                         let btn = document.querySelector("#order-submit");
+                        if(!btn)btn = document.querySelector("#order-submit");
                         btn.click();
                     }
                 )
