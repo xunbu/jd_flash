@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         jd秒杀购物车
 // @namespace    http://tampermonkey.net/
-// @version      0.1.0
+// @version      0.1.1
 // @description  jd秒杀购物车脚本
 // @author       寻步
 // @match        https://*.jd.com/*
@@ -107,7 +107,7 @@
                                     setTimeout(()=>{
                                         console.log("点击提交");
                                         submitButton.click();
-                                    },450) 
+                                    },400) 
                                 }
                                 select_all.click();
                                 //进入结算页面
@@ -186,24 +186,24 @@
         };
     } else if (location.href.startsWith(`https://trade.jd.com/shopping/order/getOrderInfo.action`)) {
         console.log("结算界面");
-        // const jd_clearCartPlan = GM_getValue("jd_clearCartPlan", init_plan());
-        // const TIMEOUT = 10 * 1000;
-        // const time = new Date(jd_clearCartPlan.time)
-        // if (jd_clearCartPlan.type === "orderWaiting") {
-        //     if ((new Date() - time) >= 0 && (new Date() - time) <= TIMEOUT) {
-        //         window.onload = () => {
-        //             setTimeout(
-        //                 () => {
-        //                     console.log("结算");
-        //                     let btn = document.querySelector("#order-submit");
-        //                     if (!btn) btn = document.querySelector("#order-submit");
-        //                     btn.click();
-        //                 }
-        //             )
-        //         }
-        //     }
-        //     GM_setValue("jd_clearCartPlan", init_plan());
-        // }
+        const jd_clearCartPlan = GM_getValue("jd_clearCartPlan", init_plan());
+        const TIMEOUT = 10 * 1000;
+        const time = new Date(jd_clearCartPlan.time)
+        if (jd_clearCartPlan.type === "orderWaiting") {
+            if ((new Date() - time) >= 0 && (new Date() - time) <= TIMEOUT) {
+                window.onload = () => {
+                    setTimeout(
+                        () => {
+                            console.log("结算");
+                            let btn = document.querySelector("#order-submit");
+                            if (!btn) btn = document.querySelector("#order-submit");
+                            btn.click();
+                        }
+                    )
+                }
+            }
+            GM_setValue("jd_clearCartPlan", init_plan());
+        }
     }      
 })()
 
