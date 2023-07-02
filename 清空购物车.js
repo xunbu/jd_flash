@@ -94,23 +94,22 @@
                                 timeFlag=false;
                                 if (select_all.checked) select_all.checked = false;//若全选之前选上了就先去掉全选
                                 select_all.click();
-                                setTimeout(
-                                    ()=>{
-                                        if (select_all.checked) {
-                                            //全选成功(购物车选上了东西表示有货)
-                                            console.log("全选成功");
-                                            GM_setValue("jd_clearCartPlan", { ...jd_clearCartPlan, type: "orderWaiting", time: new Date().toISOString() });
-                                            console.log("点击提交");
-                                            // submitButton.click()
-        
-                                        } else {
-                                            //全选失败
-                                            console.log("全选失败")
-                                            // select_all.click();
-                                            // GM_setValue("jd_clearCartPlan", { ...jd_clearCartPlan, type: "orderWaiting", time: new Date().toISOString() });
-                                        }
+                                let interval_count=0
+                                let timer =setInterval(()=>{
+                                    interval_count+=1
+                                    if(interval_count>=50){
+                                        clearInterval(timer);
                                     }
-                                )
+                                    if(select_all.checked){
+                                        console.log("全选成功");
+                                        GM_setValue("jd_clearCartPlan", { ...jd_clearCartPlan, type: "orderWaiting", time: new Date().toISOString() });
+                                        // GM_btn_sunbmit.click()
+                                        clearInterval(timer);
+                                    }else{
+                                        console.log("等待全选");
+                                    }
+                                },20)
+                                console.log("全选失败");
                                 //进入结算页面
                             } else if (deltime > 0 && deltime < 3 * 1000) {
                                 delay = 62.5;
