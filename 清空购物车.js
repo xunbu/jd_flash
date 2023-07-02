@@ -32,9 +32,6 @@
     else if (location.href.startsWith("https://cart.jd.com/cart_index")) {
         console.log("购物车页面");
         window.onload = () => {
-            let select_all = document.querySelector(`[name="select-all"]`);//全选checkbox
-            if (!select_all) { select_all = document.querySelector(`[name="select-all"]`); }
-            let submitButton = document.querySelector(`.common-submit-btn`);//提交按钮
             let jd_clearCartPlan = GM_getValue("jd_clearCartPlan", init_plan());//秒杀购物车计划信息{time:Date}
             console.log("jd_clearCartPlan:", jd_clearCartPlan);
             if (jd_clearCartPlan.type === "waiting") {
@@ -48,11 +45,11 @@
                 console.log("等待秒杀购物车");
                 const setting = document.createElement('div');
                 setting.innerHTML = `
-                    <div>秒杀购物车时间</div>
-                    <div>${time.getMonth() + 1}月${time.getDate()}日 ${time.getHours()}:${time.getMinutes()}</div>
+                    <div>秒杀时间</div>
+                    <div>${time.getMonth() + 1}月${time.getDate()}日 ${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}</div>
                     <div>倒计时</div>
                     <div id="GM_div_cd">?</div>
-                    <button id="GM_btn_cancel" >取消秒杀购物车</button>
+                    <button id="GM_btn_cancel" >取消</button>
                 `;
                 setting.style.cssText = `
                     z-index:999;
@@ -71,11 +68,15 @@
                     background-color:white;
                 `;
                 document.body.append(setting);
+                let select_all = document.querySelector(`[name="select-all"]`);//全选checkbox
+                let submitButton = document.querySelector(`.common-submit-btn`);//提交按钮
+                console.log(select_all,submitButton);
                 const GM_div_cd = document.querySelector('#GM_div_cd');
                 const GM_btn_cancel = document.querySelector('#GM_btn_cancel');
                 let now;//记录setTimeout与当前时间
-                let timeFlag=true//是否setTimeOut
-                let timer=setTimeout(function run() {
+                let timeFlag = true//是否setTimeOut
+                let canClicktoUnchecked = true//如果在0~3秒内发现全选勾上就点击一次取消勾选
+                setTimeout(function run() {
                     GM_xmlhttpRequest({
                         method: "POST",
                         url: "https://sgm-m.jd.com/h5/",
@@ -91,37 +92,40 @@
                             if (deltime <= 0) {
                                 //时间到了开始秒杀购物车
                                 console.log("开始秒杀");
-                                timeFlag=false;
-                                if (select_all.checked) select_all.checked = false;//若全选之前选上了就先去掉全选
+                                timeFlag = false;
+                                //要求此时应该是非全选状态
+                                select_all.addEventListener("change", selectAll)
+                                let timer;
+                                timer = setTimeout(() => {
+                                    alert("全选购物车失败");
+                                    GM_setValue("jd_clearCartPlan", init_plan());
+                                }, 3000);
+                                function selectAll() {
+                                    console.log("全选成功");
+                                    if (timer) clearTimeout(timer);
+                                    GM_setValue("jd_clearCartPlan", { ...jd_clearCartPlan, type: "orderWaiting", time: new Date().toISOString() });
+                                    setTimeout(()=>{
+                                        console.log("点击提交");
+                                        submitButton.click();
+                                    },450) 
+                                }
                                 select_all.click();
-                                let interval_count=0
-                                let timer =setInterval(()=>{
-                                    interval_count+=1
-                                    if(interval_count>=50){
-                                        clearInterval(timer);
-                                    }
-                                    if(select_all.checked){
-                                        console.log("全选成功");
-                                        GM_setValue("jd_clearCartPlan", { ...jd_clearCartPlan, type: "orderWaiting", time: new Date().toISOString() });
-                                        // GM_btn_sunbmit.click()
-                                        clearInterval(timer);
-                                    }else{
-                                        console.log("等待全选");
-                                    }
-                                },20)
-                                console.log("全选失败");
                                 //进入结算页面
                             } else if (deltime > 0 && deltime < 3 * 1000) {
+                                if (select_all.checked && canClicktoUnchecked) {
+                                    select_all.click();
+                                    canClicktoUnchecked = false;
+                                }
                                 delay = 62.5;
                                 GM_div_cd.textContent = `${deltime / 1000}秒`;
                             } else {
                                 delay = 500;
                                 GM_div_cd.textContent = `${deltime / 1000}秒`;
                             }
-                            if(timeFlag)timer = setTimeout(run, delay);
+                            if (timeFlag) setTimeout(run, delay);
                         },
                     });
-                  
+
                 })
 
                 GM_btn_cancel.onclick = () => {
@@ -160,8 +164,8 @@
                 const GM_input_min = document.querySelector("#GM_input_min");
                 const GM_btn_sunbmit = document.querySelector("#GM_btn_sunbmit");
                 GM_btn_sunbmit.onclick = () => {
-                    const [hour,minutes]=[parseFloat(GM_input_hour.value),parseFloat(GM_input_min.value)];
-                    if(isNaN(hour)||isNaN(minutes)){
+                    const [hour, minutes] = [parseFloat(GM_input_hour.value), parseFloat(GM_input_min.value)];
+                    if (isNaN(hour) || isNaN(minutes)) {
                         alert("请输入计划购买时间");
                         return
                     }
@@ -170,7 +174,7 @@
                     time.setMilliseconds(0);
                     time.setHours(hour);
                     time.setMinutes(minutes);
-                    if(new Date()-time>=0){
+                    if (new Date() - time >= 0) {
                         alert("购买时间不能小于当前时间");
                         return
                     }
@@ -184,7 +188,7 @@
         console.log("结算界面");
         // const jd_clearCartPlan = GM_getValue("jd_clearCartPlan", init_plan());
         // const TIMEOUT = 10 * 1000;
-        // const time=new Date(jd_clearCartPlan.time)
+        // const time = new Date(jd_clearCartPlan.time)
         // if (jd_clearCartPlan.type === "orderWaiting") {
         //     if ((new Date() - time) >= 0 && (new Date() - time) <= TIMEOUT) {
         //         window.onload = () => {
@@ -200,7 +204,7 @@
         //     }
         //     GM_setValue("jd_clearCartPlan", init_plan());
         // }
-    }
+    }      
 })()
 
 function init_plan() {
