@@ -107,7 +107,23 @@
                                     setTimeout(()=>{
                                         console.log("点击提交");
                                         submitButton.click();
-                                    },400) 
+                                    },400)
+                                    setTimeout(()=>{
+                                        console.log("点击提交");
+                                        submitButton.click();
+                                    },450)
+                                    setTimeout(()=>{
+                                        console.log("点击提交");
+                                        submitButton.click();
+                                    },500)
+                                    setTimeout(()=>{
+                                        console.log("点击提交");
+                                        submitButton.click();
+                                    },600)
+                                    setTimeout(()=>{
+                                        console.log("点击提交");
+                                        submitButton.click();
+                                    },800)      
                                 }
                                 select_all.click();
                                 //进入结算页面
