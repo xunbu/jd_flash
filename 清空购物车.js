@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         jd秒杀购物车
 // @namespace    http://tampermonkey.net/
-// @version      0.1.1
+// @version      0.1.2
 // @description  jd秒杀购物车脚本
 // @author       寻步
 // @match        https://*.jd.com/*
